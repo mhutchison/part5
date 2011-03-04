@@ -5,6 +5,10 @@
 // This file provides the int traverse( ) function that traverses the
 // parse tree provided by the lexer/parser for the cs 3155 language.
 // The traversal attaches the attributes that are listed in the project
+
+// Adding a comment to test out github
+
+
 // specification.
 #include <cassert>            // Provides assert macro
 #include <iostream>           // Provides cerr
