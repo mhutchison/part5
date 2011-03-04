@@ -1,0 +1,191 @@
+// File: symtab.template
+// Written by: Michael Main
+// Version: Jan 12, 2006
+#include <cassert>       // Provides assert macro
+#include <cstdlib>       // Provides NULL
+#include <map>           // Provides vector template class
+#include <cmath>         // Provides abs
+#include <stack>         // Provides stack template class
+#include <string>        // Provides string class
+
+namespace colorado
+{
+    template <class value_type>
+    void symbol_table<value_type>::clear( )
+    {
+	cd = -1;
+	sought = NULL;
+	symbols.clear( );
+	kinds.clear( );
+	kinds_to_save.clear( );
+	while (!saved.empty( ))
+	    saved.pop( );
+    }
+
+    template <class value_type>
+    void symbol_table<value_type>::enter_scope( )
+    {
+	unsigned int i;
+	int kind;
+
+	++cd;
+	sought = NULL;
+	for (i = 0; i < kinds_to_save.size( ); ++i)
+	{
+	    kind = kinds_to_save[i];
+	    saved.push(kinds[kind]);
+	    kinds[kind].current_offset = kinds[kind].start_offset;
+	}
+    }
+
+    template <class value_type>
+    void symbol_table<value_type>::exit_scope( )
+    {
+	assert(cd >= 0);
+	unsigned int i;
+	kind_info saved_info;
+	
+	--cd;
+	sought = NULL;
+	for (i = 0; i < kinds_to_save.size( ); ++i)
+	{
+	    saved_info = saved.top( );
+	    saved.pop( );
+	    kinds[saved_info.kind] = saved_info;
+	}
+
+	while (!symbols.empty( ) && symbols.back( ).depth > cd)
+	    symbols.pop_back( );
+    }
+
+    template <class value_type>
+    bool symbol_table<value_type>::insert(std::string name, int kind, value_type value)
+    {
+	assert(current_depth( ) >= 0);
+	assert(has_kind(kind));
+	
+	symbol_info info;
+	
+	seek(name);
+	if (sought != NULL && sought->depth == cd)
+	    return false;
+	
+	info.name = name;
+	info.depth = cd;
+	info.kind = kind;
+	info.offset = kinds[kind].current_offset;
+	kinds[kind].current_offset += kinds[kind].delta;
+	info.value = value;
+
+	symbols.push_back(info);
+	return true;
+    }
+
+    template <class value_type>
+    void symbol_table<value_type>::register_kind
+    (int kind, int start_offset, int delta, bool reset_for_new_scope)
+    {
+	assert(cd == -1);
+	assert(!has_kind(kind));
+
+	kind_info info;
+
+	info.kind = kind;
+	info.start_offset = info.current_offset = start_offset;
+	info.delta = delta;
+	kinds[kind] = info;
+	if (reset_for_new_scope)
+	    kinds_to_save.push_back(kind);
+    }
+    
+    template <class value_type>
+    typename symbol_table<value_type>::symbol_info* symbol_table<value_type>::seek(std::string name)
+    {
+	unsigned int i;
+
+	sought = NULL;
+	i = symbols.size( );
+	while (i > 0)
+	{
+	    if (symbols[--i].name == name)
+	    {
+		sought = &(symbols[i]);
+		break;
+	    }
+	}
+	return sought;
+    }
+   
+    template <class value_type>
+    typename symbol_table<value_type>::symbol_info* symbol_table<value_type>::seek(int depth)
+    {
+	unsigned int i;
+
+	sought = NULL;
+	i = symbols.size( );
+	while (i > 0)
+	{
+	    if (symbols[--i].depth == depth)
+	    {
+		sought = &(symbols[i]);
+		break;
+	    }
+	}
+	return sought;
+    }
+   
+    template <class value_type>
+    std::string symbol_table<value_type>::name( ) const
+    {
+	assert(seek_ok( ));
+	return sought->name;
+    }
+    
+    template <class value_type>
+    int symbol_table<value_type>::depth( ) const
+    {
+	assert(seek_ok( ));
+	return sought->depth;
+    }
+    
+    template <class value_type>
+    int symbol_table<value_type>::kind( ) const
+    {
+	assert(seek_ok( ));
+	return sought->kind;
+    }
+    
+    template <class value_type>
+    int symbol_table<value_type>::offset( ) const
+    {
+	assert(seek_ok( ));
+	return sought->offset;
+    }
+    
+    template <class value_type>
+    value_type symbol_table<value_type>::value( ) const
+    {
+	assert(seek_ok( ));
+	return sought->value;
+    }
+
+    template <class value_type>
+    int symbol_table<value_type>::many_bytes(int kind) const
+    {
+	assert(current_depth( ) >= 0);
+	assert(has_kind(kind));
+
+	const kind_info& info = kinds.find(kind)->second;
+	return std::abs(info.current_offset - info.start_offset);
+    }
+
+    template <class value_type>
+    int symbol_table<value_type>::many_symbols(int kind) const
+    {
+	assert(current_depth( ) >= 0);
+	assert(has_kind(kind));
+
+	const kind_info& info = kinds.find(kind)->second;
+	return (info.current_offset - info.start_offset)/info.delta;
+    }
+}

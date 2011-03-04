@@ -1,0 +1,31 @@
+I created a type: colorado::symbol_tab st;
+
+It's job: Keep track of certain information about every identifier
+that appears in a cu program.
+
+Done (by me) in traverse function...
+st.clear( );
+st.register_kind(parmdefn__, 16, 4, true);
+
+The traverse function then makes a call:
+traverse_subtree(parse_tree_root_ptr);
+
+What needs to occur in traverse_subtree for a NONTERMINAL:
+1. Figure out what kind of LHS you have because later steps depend on
+that!
+
+2. If I have a funcdefn__
+   st.enter_scope( );
+
+3. Recursively process every child from child(0) to last child
+
+4. If I have a funcdefn__
+   st.exit_scope( );
+   If I have a vardefn or parmdefn:
+   insert its information into the symbol table.
+   decorate that vardefn or parmdefn's IDENTIFIER child again
+
+5. decorate the root of the tree that you're processing
+
+For a TERMINAL:
+Just decorate it.
