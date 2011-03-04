@@ -8,6 +8,7 @@
 
 // Adding a comment to test out github
 
+// Comment #2
 
 // specification.
 #include <cassert>            // Provides assert macro
